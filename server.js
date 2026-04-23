@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const { google } = require('googleapis');
-const twilio = require('twilio');
 const moment = require('moment-timezone');
 
 const app = express();
@@ -20,13 +19,6 @@ const oauth2Client = new google.auth.OAuth2(
 );
 oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
 const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-
-// ─── Twilio ───────────────────────────────────────────────────────────────────
-
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
 
 // ─── FAQ data ─────────────────────────────────────────────────────────────────
 
@@ -205,40 +197,11 @@ app.post('/book-appointment', async (req, res) => {
       },
     });
 
-    // Send Twilio SMS to customer
-    const smsBody =
-      `Appointment Confirmed!\n` +
-      `📅 ${date} at ${time} (CT)\n` +
-      `🔧 ${issue}\n` +
-      `📍 ${address}\n` +
-      `Confirmation #: ${confirmationNumber}\n` +
-      `Questions? Call ${process.env.BUSINESS_PHONE || 'us'}.`;
-
-    await twilioClient.messages.create({
-      body: smsBody,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phone,
-    });
-
-    // Optionally notify the business
-    if (process.env.BUSINESS_PHONE) {
-      const bizBody =
-        `New Booking – ${confirmationNumber}\n` +
-        `${date} at ${time}\nCustomer: ${name} | ${phone}\n` +
-        `Address: ${address}\nIssue: ${issue}`;
-
-      await twilioClient.messages.create({
-        body: bizBody,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: process.env.BUSINESS_PHONE,
-      }).catch((e) => console.warn('Business SMS failed:', e.message));
-    }
-
     res.json({
       success: true,
       confirmation_number: confirmationNumber,
       appointment: { name, phone, address, date, time, issue, timezone: TIMEZONE },
-      message: `Appointment booked for ${date} at ${time} CT. Confirmation sent to ${phone}.`,
+      message: `Appointment booked for ${date} at ${time} CT. Confirmation #: ${confirmationNumber}.`,
     });
   } catch (err) {
     console.error('book-appointment error:', err.message);
