@@ -37,9 +37,9 @@ app.get('/health', (_req, res) => {
 
 // ─── API routes ───────────────────────────────────────────────────────────────
 
-app.post('/check-availability', availabilityRouter);
-app.post('/book-appointment', bookingRouter);
-app.post('/get-faq', faqRouter);
+app.use('/check-availability', availabilityRouter);
+app.use('/book-appointment', bookingRouter);
+app.use('/get-faq', faqRouter);
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 
