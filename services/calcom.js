@@ -88,7 +88,9 @@ async function createBooking({ name, phone, email, address, date, time, issue, c
         language: 'en',
         phoneNumber: phone,
       },
-      metadata: { address, issue, source: 'voice-agent' },
+      // bookingFieldsResponses keys must match the identifiers set in Cal.com → Event Type → Questions
+      bookingFieldsResponses: { issue, address },
+      metadata: { source: 'voice-agent' },
     }),
   });
 
