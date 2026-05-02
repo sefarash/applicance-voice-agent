@@ -21,6 +21,17 @@ app.use('/check-availability', availabilityRouter);
 app.use('/book-appointment', bookingRouter);
 app.use('/get-faq', faqRouter);
 
+// ─── Debug: confirm env vars are loaded (safe — shows no secrets) ─────────────
+
+app.get('/debug/config', (_req, res) => {
+  res.json({
+    CAL_API_KEY_set: !!process.env.CAL_API_KEY,
+    CAL_EVENT_TYPE_ID_raw: process.env.CAL_EVENT_TYPE_ID,
+    CAL_EVENT_TYPE_ID_parsed: Number(process.env.CAL_EVENT_TYPE_ID),
+    CLIENTS_CONFIG_set: !!process.env.CLIENTS_CONFIG,
+  });
+});
+
 // ─── Cal.com setup helper — REMOVE AFTER GETTING EVENT TYPE IDs ───────────────
 
 app.get('/calcom/setup', async (req, res, next) => {
