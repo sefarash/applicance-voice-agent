@@ -4,12 +4,13 @@ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TO
 const FROM = process.env.TWILIO_PHONE_NUMBER;
 const BUSINESS_PHONE = process.env.BUSINESS_PHONE;
 
-async function sendBookingConfirmation({ phone, name, date, time, issue, confirmationNumber }) {
+async function sendBookingConfirmation({ phone, name, date, time, issue, confirmationNumber, bookingUrl }) {
   const body =
-    `Appointment Confirmed!\n` +
+    `Appointment Reserved!\n` +
     `Date: ${date} at ${time} CT\n` +
     `Issue: ${issue}\n` +
     `Confirmation #: ${confirmationNumber}\n` +
+    (bookingUrl ? `Complete booking: ${bookingUrl}\n` : '') +
     `Questions? Call ${BUSINESS_PHONE || 'us'}.`;
 
   await client.messages.create({ body, from: FROM, to: phone });

@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const { oauth2Client } = require('./services/googleCalendar');
+const { listEventTypes } = require('./services/calendly');
 
 const availabilityRouter = require('./routes/availability');
 const bookingRouter = require('./routes/booking');
@@ -8,26 +8,6 @@ const faqRouter = require('./routes/faq');
 
 const app = express();
 app.use(express.json());
-
-// ─── OAuth helper routes — REMOVE AFTER GETTING REFRESH TOKEN ─────────────────
-
-app.get('/oauth/start', (req, res) => {
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    prompt: 'consent',
-    scope: ['https://www.googleapis.com/auth/calendar']
-  });
-  res.redirect(url);
-});
-
-app.get('/oauth/callback', async (req, res) => {
-  try {
-    const { tokens } = await oauth2Client.getToken(req.query.code);
-    res.json(tokens);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -40,6 +20,17 @@ app.get('/health', (_req, res) => {
 app.use('/check-availability', availabilityRouter);
 app.use('/book-appointment', bookingRouter);
 app.use('/get-faq', faqRouter);
+
+// ─── Calendly helper — REMOVE AFTER GETTING EVENT TYPE URI ───────────────────
+
+app.get('/calendly/event-types', async (_req, res, next) => {
+  try {
+    const types = await listEventTypes();
+    res.json(types);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 

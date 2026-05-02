@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { getBookedSlots, AVAILABLE_SLOTS, TIMEZONE } = require('../services/googleCalendar');
+const { getAvailableSlots, AVAILABLE_SLOTS, TIMEZONE } = require('../services/calendly');
 
 const router = Router();
 
@@ -11,14 +11,13 @@ router.post('/', async (req, res, next) => {
   }
 
   try {
-    const booked = await getBookedSlots(date);
-    const available = AVAILABLE_SLOTS.filter((slot) => !booked.has(slot));
+    const { available, booked } = await getAvailableSlots(date);
 
     res.json({
       date,
       timezone: TIMEZONE,
       available_slots: available,
-      booked_slots: [...booked],
+      booked_slots: booked,
     });
   } catch (err) {
     next(err);

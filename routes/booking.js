@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { getBookedSlots, createEvent, AVAILABLE_SLOTS, TIMEZONE } = require('../services/googleCalendar');
+const { getAvailableSlots, createSchedulingLink, AVAILABLE_SLOTS, TIMEZONE } = require('../services/calendly');
 const { sendBookingConfirmation, sendBusinessAlert } = require('../services/twilio');
 
 const router = Router();
@@ -24,16 +24,24 @@ router.post('/', async (req, res, next) => {
   }
 
   try {
-    const booked = await getBookedSlots(date);
-    if (booked.has(time)) {
-      return res.status(409).json({ error: `${time} on ${date} is already booked` });
+    const { available } = await getAvailableSlots(date);
+    if (!available.includes(time)) {
+      return res.status(409).json({ error: `${time} on ${date} is not available` });
     }
 
     const confirmationNumber = generateConfirmationNumber();
-    await createEvent({ name, phone, address, date, time, issue, confirmationNumber });
 
-    // SMS is best-effort — failure must not fail the booking
-    const smsData = { phone, name, date, time, issue, confirmationNumber };
+    // Try to create a single-use Calendly link (requires Teams plan).
+    // Falls back to the general event type URL on lower plans.
+    let bookingUrl = process.env.CALENDLY_EVENT_TYPE_URL || null;
+    try {
+      bookingUrl = await createSchedulingLink();
+    } catch (e) {
+      console.warn('Scheduling link unavailable (Teams plan required):', e.message);
+    }
+
+    // SMS is best-effort — failure must not fail the booking response
+    const smsData = { phone, name, date, time, issue, confirmationNumber, bookingUrl };
     Promise.all([
       sendBookingConfirmation(smsData),
       sendBusinessAlert({ ...smsData, address }),
@@ -42,8 +50,9 @@ router.post('/', async (req, res, next) => {
     res.json({
       success: true,
       confirmation_number: confirmationNumber,
+      booking_url: bookingUrl,
       appointment: { name, phone, address, date, time, issue, timezone: TIMEZONE },
-      message: `Booked for ${date} at ${time} CT. Confirmation #: ${confirmationNumber}.`,
+      message: `${time} on ${date} CT is reserved. Confirmation #: ${confirmationNumber}. Complete booking at the link sent to ${phone}.`,
     });
   } catch (err) {
     next(err);
