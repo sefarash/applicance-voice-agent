@@ -92,10 +92,22 @@ async function createBooking({ name, phone, email, address, date, time, issue, c
 
 async function listEventTypes(clientId) {
   const { apiKey } = getClientConfig(clientId);
-  const { data } = await api('/event-types', apiKey);
-  return (data.eventTypeGroups || [])
+
+  if (!apiKey) throw new Error('CAL_API_KEY is not set in environment variables');
+
+  // Fetch current user first to confirm the key works and get the username
+  const me = await api('/me', apiKey);
+  const username = me.data?.username;
+
+  // Cal.com v2 event-types requires username as a filter
+  const params = username ? `?username=${encodeURIComponent(username)}` : '';
+  const { data } = await api(`/event-types${params}`, apiKey);
+
+  // v2 returns eventTypeGroups; flatten to a simple list
+  const groups = data.eventTypeGroups || (Array.isArray(data) ? [{ eventTypes: data }] : []);
+  return groups
     .flatMap((g) => g.eventTypes || [])
-    .map(({ id, title, slug, length }) => ({ id, title, slug, length }));
+    .map(({ id, title, slug, length }) => ({ id, title, slug, durationMinutes: length }));
 }
 
 module.exports = { getAvailableSlots, createBooking, listEventTypes, AVAILABLE_SLOTS, TIMEZONE };
