@@ -31,7 +31,7 @@ async function api(path, apiKey, options = {}) {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'cal-api-version': '2024-08-13',
+      'cal-api-version': '2024-04-15',
       ...(options.headers || {}),
     },
   });
