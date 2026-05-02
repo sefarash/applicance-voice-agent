@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const { listEventTypes } = require('./services/calendly');
+const { listEventTypes } = require('./services/calcom');
 
 const availabilityRouter = require('./routes/availability');
 const bookingRouter = require('./routes/booking');
@@ -21,12 +21,16 @@ app.use('/check-availability', availabilityRouter);
 app.use('/book-appointment', bookingRouter);
 app.use('/get-faq', faqRouter);
 
-// ─── Calendly helper — REMOVE AFTER GETTING EVENT TYPE URI ───────────────────
+// ─── Cal.com setup helper — REMOVE AFTER GETTING EVENT TYPE IDs ───────────────
 
-app.get('/calendly/event-types', async (_req, res, next) => {
+app.get('/calcom/setup', async (req, res, next) => {
   try {
-    const types = await listEventTypes();
-    res.json(types);
+    const { client_id } = req.query;
+    const types = await listEventTypes(client_id);
+    res.json({
+      instructions: 'Copy the id of your event type and set it as CAL_EVENT_TYPE_ID in Railway.',
+      event_types: types,
+    });
   } catch (err) {
     next(err);
   }

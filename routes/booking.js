@@ -1,15 +1,11 @@
 const { Router } = require('express');
-const { getAvailableSlots, createSchedulingLink, AVAILABLE_SLOTS, TIMEZONE } = require('../services/calendly');
+const { getAvailableSlots, createBooking, AVAILABLE_SLOTS, TIMEZONE } = require('../services/calcom');
 const { sendBookingConfirmation, sendBusinessAlert } = require('../services/twilio');
 
 const router = Router();
 
-function generateConfirmationNumber() {
-  return 'APR-' + Math.random().toString(36).substr(2, 8).toUpperCase();
-}
-
 router.post('/', async (req, res, next) => {
-  const { name, phone, address, date, time, issue } = req.body;
+  const { name, phone, email, address, date, time, issue, client_id } = req.body;
 
   if (!name || !phone || !address || !date || !time || !issue) {
     return res.status(400).json({
@@ -24,35 +20,26 @@ router.post('/', async (req, res, next) => {
   }
 
   try {
-    const { available } = await getAvailableSlots(date);
+    const { available } = await getAvailableSlots(date, client_id);
     if (!available.includes(time)) {
       return res.status(409).json({ error: `${time} on ${date} is not available` });
     }
 
-    const confirmationNumber = generateConfirmationNumber();
-
-    // Try to create a single-use Calendly link (requires Teams plan).
-    // Falls back to the general event type URL on lower plans.
-    let bookingUrl = process.env.CALENDLY_EVENT_TYPE_URL || null;
-    try {
-      bookingUrl = await createSchedulingLink();
-    } catch (e) {
-      console.warn('Scheduling link unavailable (Teams plan required):', e.message);
-    }
+    // Creates a real event on the client's Cal.com calendar
+    const booking = await createBooking({ name, phone, email, address, date, time, issue, client_id });
+    const confirmationNumber = booking.uid;
 
     // SMS is best-effort — failure must not fail the booking response
-    const smsData = { phone, name, date, time, issue, confirmationNumber, bookingUrl };
     Promise.all([
-      sendBookingConfirmation(smsData),
-      sendBusinessAlert({ ...smsData, address }),
+      sendBookingConfirmation({ phone, name, date, time, issue, confirmationNumber }),
+      sendBusinessAlert({ name, phone, address, date, time, issue, confirmationNumber }),
     ]).catch((err) => console.warn('SMS error (non-fatal):', err.message));
 
     res.json({
       success: true,
       confirmation_number: confirmationNumber,
-      booking_url: bookingUrl,
       appointment: { name, phone, address, date, time, issue, timezone: TIMEZONE },
-      message: `${time} on ${date} CT is reserved. Confirmation #: ${confirmationNumber}. Complete booking at the link sent to ${phone}.`,
+      message: `Booked for ${date} at ${time} CT. Confirmation #: ${confirmationNumber}.`,
     });
   } catch (err) {
     next(err);
