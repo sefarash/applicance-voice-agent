@@ -4,6 +4,10 @@ const BASE = 'https://api.cal.com/v2';
 const TIMEZONE = 'America/Chicago';
 const AVAILABLE_SLOTS = ['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM'];
 
+// Cal.com uses different API versions per endpoint
+const VERSION_LEGACY  = '2024-04-15'; // required for /event-types
+const VERSION_CURRENT = '2024-08-13'; // required for /bookings and /slots
+
 // ─── Multi-client config ──────────────────────────────────────────────────────
 // Single client: set CAL_API_KEY + CAL_EVENT_TYPE_ID in env
 // Multiple clients: set CLIENTS_CONFIG as JSON string, e.g.:
@@ -25,13 +29,13 @@ function getClientConfig(clientId) {
 
 // ─── HTTP helper ──────────────────────────────────────────────────────────────
 
-async function api(path, apiKey, options = {}) {
+async function api(path, apiKey, version, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'cal-api-version': '2024-04-15',
+      'cal-api-version': version,
       ...(options.headers || {}),
     },
   });
@@ -49,7 +53,7 @@ async function getAvailableSlots(dateStr, clientId) {
   const endTime = moment.tz(dateStr, 'YYYY-MM-DD', TIMEZONE).endOf('day').toISOString();
 
   const params = new URLSearchParams({ startTime, endTime, eventTypeId });
-  const { data } = await api(`/slots/available?${params}`, apiKey);
+  const { data } = await api(`/slots/available?${params}`, apiKey, VERSION_CURRENT);
 
   const slotsForDay = (data.slots || {})[dateStr] || [];
   const calAvailable = new Set(
@@ -69,23 +73,26 @@ async function createBooking({ name, phone, email, address, date, time, issue, c
 
   const start = moment.tz(`${date} ${time}`, 'YYYY-MM-DD h:mm A', TIMEZONE).toISOString();
 
-  const { data } = await api('/bookings', apiKey, {
+  // Placeholder email uses a real TLD so Cal.com passes validation
+  const attendeeEmail = email || `voice.${phone.replace(/\D/g, '')}@placeholder.com`;
+
+  const { data } = await api('/bookings', apiKey, VERSION_CURRENT, {
     method: 'POST',
     body: JSON.stringify({
       eventTypeId,
       start,
       attendee: {
         name,
-        // Cal.com requires an email — use a placeholder if caller didn't provide one
-        email: email || `voice.${phone.replace(/\D/g, '')}@booking.local`,
+        email: attendeeEmail,
         timeZone: TIMEZONE,
+        language: 'en',
         phoneNumber: phone,
       },
       metadata: { address, issue, source: 'voice-agent' },
     }),
   });
 
-  return data; // contains uid, title, start, end, etc.
+  return data;
 }
 
 // ─── Helper: list event types (used by /calcom/setup) ────────────────────────
@@ -95,15 +102,12 @@ async function listEventTypes(clientId) {
 
   if (!apiKey) throw new Error('CAL_API_KEY is not set in environment variables');
 
-  // Fetch current user first to confirm the key works and get the username
-  const me = await api('/me', apiKey);
+  const me = await api('/me', apiKey, VERSION_LEGACY);
   const username = me.data?.username;
 
-  // Cal.com v2 event-types requires username as a filter
   const params = username ? `?username=${encodeURIComponent(username)}` : '';
-  const { data } = await api(`/event-types${params}`, apiKey);
+  const { data } = await api(`/event-types${params}`, apiKey, VERSION_LEGACY);
 
-  // v2 returns eventTypeGroups; flatten to a simple list
   const groups = data.eventTypeGroups || (Array.isArray(data) ? [{ eventTypes: data }] : []);
   return groups
     .flatMap((g) => g.eventTypes || [])
