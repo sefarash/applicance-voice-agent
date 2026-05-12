@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { getAvailableSlots, createBooking, AVAILABLE_SLOTS, TIMEZONE } = require('../services/calcom');
+const { getAvailableSlots, createBooking, AVAILABLE_SLOTS, TIMEZONE } = require('../services/jobber');
 const { sendBookingConfirmation, sendBusinessAlert } = require('../services/twilio');
 
 const router = Router();
@@ -12,7 +12,9 @@ router.post('/', async (req, res, next) => {
       error: 'All fields required: name, phone, address, date, time, issue',
     });
   }
-
+  if (!client_id) {
+    return res.status(400).json({ error: 'client_id is required' });
+  }
   if (!AVAILABLE_SLOTS.includes(time)) {
     return res.status(400).json({
       error: `Invalid time slot. Available: ${AVAILABLE_SLOTS.join(', ')}`,
@@ -25,8 +27,7 @@ router.post('/', async (req, res, next) => {
       return res.status(409).json({ error: `${time} on ${date} is not available` });
     }
 
-    // Creates a real event on the client's Cal.com calendar
-    const booking = await createBooking({ name, phone, email, address, date, time, issue, client_id });
+    const booking = await createBooking({ name, phone, email, address, date, time, issue, clientId: client_id });
     const confirmationNumber = booking.uid;
 
     // SMS is best-effort — failure must not fail the booking response

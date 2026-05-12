@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { getAvailableSlots, AVAILABLE_SLOTS, TIMEZONE } = require('../services/calcom');
+const { getAvailableSlots, AVAILABLE_SLOTS, TIMEZONE } = require('../services/jobber');
 
 const router = Router();
 
@@ -9,11 +9,13 @@ router.post('/', async (req, res, next) => {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({ error: 'date is required in YYYY-MM-DD format' });
   }
+  if (!client_id) {
+    return res.status(400).json({ error: 'client_id is required' });
+  }
 
   try {
     const { available, booked } = await getAvailableSlots(date, client_id);
 
-    // If a specific time was requested, give a direct yes/no answer the agent can speak
     if (time) {
       const isAvailable = available.includes(time);
       return res.json({
@@ -31,7 +33,6 @@ router.post('/', async (req, res, next) => {
       });
     }
 
-    // No specific time — return the full day overview
     res.json({
       date,
       timezone: TIMEZONE,
