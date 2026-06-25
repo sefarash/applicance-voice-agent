@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { getAvailableSlots, AVAILABLE_SLOTS, TIMEZONE } = require('../services/jobber');
+const { getAvailableSlots, AVAILABLE_SLOTS, TIMEZONE } = require('../services/googleCalendar');
 
 const router = Router();
 

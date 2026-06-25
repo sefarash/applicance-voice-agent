@@ -4,7 +4,7 @@ const express = require('express');
 const availabilityRouter = require('./routes/availability');
 const bookingRouter = require('./routes/booking');
 const faqRouter = require('./routes/faq');
-const jobberRouter = require('./routes/jobber');
+const googleRouter = require('./routes/google');
 
 const app = express();
 app.use(express.json());
@@ -16,13 +16,14 @@ app.get('/health', (_req, res) => {
 app.use('/check-availability', availabilityRouter);
 app.use('/book-appointment', bookingRouter);
 app.use('/get-faq', faqRouter);
-app.use('/jobber', jobberRouter);
+app.use('/google', googleRouter);
 
 app.get('/debug/config', (_req, res) => {
   res.json({
     CLIENTS_CONFIG_set: !!process.env.CLIENTS_CONFIG,
-    JOBBER_CLIENT_ID_set: !!process.env.JOBBER_CLIENT_ID,
-    JOBBER_CLIENT_SECRET_set: !!process.env.JOBBER_CLIENT_SECRET,
+    GOOGLE_CLIENT_ID_set: !!process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET_set: !!process.env.GOOGLE_CLIENT_SECRET,
+    GOOGLE_REFRESH_TOKEN_set: !!process.env.GOOGLE_REFRESH_TOKEN,
     BASE_URL: process.env.BASE_URL || '(not set)',
   });
 });

@@ -20,6 +20,7 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "googleapis": "^173.0.0",
     "moment-timezone": "^0.6.1",
     "twilio": "^6.0.0"
   },
