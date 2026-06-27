@@ -16,7 +16,7 @@ async function sendBookingConfirmation({ phone, name, address, date, time, issue
     (TECHNICIAN_PHONE
       ? `If the address above is incorrect, please text the correct address to your technician at ${TECHNICIAN_PHONE}.\n`
       : '') +
-    `Questions? Call ${BUSINESS_PHONE || 'us'}.`;
+    `Questions? Call ${TECHNICIAN_PHONE || BUSINESS_PHONE || 'us'}.`;
 
   await client.messages.create({ body, from: FROM, to: phone });
 }
