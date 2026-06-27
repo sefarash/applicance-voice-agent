@@ -31,7 +31,7 @@ router.post('/', async (req, res, next) => {
 
     // SMS is best-effort — failure must not fail the booking response
     Promise.all([
-      sendBookingConfirmation({ phone, name, date, time, issue, confirmationNumber }),
+      sendBookingConfirmation({ phone, name, address, date, time, issue, confirmationNumber }),
       sendBusinessAlert({ name, phone, address, date, time, issue, confirmationNumber }),
     ]).catch((err) => console.warn('SMS error (non-fatal):', err.message));
 
