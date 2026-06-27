@@ -9,14 +9,6 @@ const googleRouter = require('./routes/google');
 const app = express();
 app.use(express.json());
 
-// TEMP request logging — remove after diagnosing the ElevenLabs agent calls.
-app.use((req, _res, next) => {
-  if (req.method === 'POST') {
-    console.log(`[REQ] ${req.method} ${req.originalUrl} body=${JSON.stringify(req.body)}`);
-  }
-  next();
-});
-
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
