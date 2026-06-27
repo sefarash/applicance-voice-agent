@@ -4,13 +4,12 @@ const { getAvailableSlots, AVAILABLE_SLOTS, TIMEZONE } = require('../services/go
 const router = Router();
 
 router.post('/', async (req, res, next) => {
-  const { date, time, client_id } = req.body;
+  const { date, time } = req.body;
+  // client_id is optional — defaults to the single-tenant config (GOOGLE_REFRESH_TOKEN).
+  const client_id = req.body.client_id || 'default';
 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({ error: 'date is required in YYYY-MM-DD format' });
-  }
-  if (!client_id) {
-    return res.status(400).json({ error: 'client_id is required' });
   }
 
   try {

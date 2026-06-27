@@ -5,15 +5,14 @@ const { sendBookingConfirmation, sendBusinessAlert } = require('../services/twil
 const router = Router();
 
 router.post('/', async (req, res, next) => {
-  const { name, phone, email, address, date, time, issue, client_id } = req.body;
+  const { name, phone, email, address, date, time, issue } = req.body;
+  // client_id is optional — defaults to the single-tenant config (GOOGLE_REFRESH_TOKEN).
+  const client_id = req.body.client_id || 'default';
 
   if (!name || !phone || !address || !date || !time || !issue) {
     return res.status(400).json({
       error: 'All fields required: name, phone, address, date, time, issue',
     });
-  }
-  if (!client_id) {
-    return res.status(400).json({ error: 'client_id is required' });
   }
   if (!AVAILABLE_SLOTS.includes(time)) {
     return res.status(400).json({
