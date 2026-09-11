@@ -47,8 +47,10 @@ async function sendBookingConfirmation({ phone, name, address, date, time, issue
   return sendSms(phone, body);
 }
 
+// Alerts the business line and the technician. De-duplicated so a shared number gets one text.
 async function sendBusinessAlert({ name, phone, address, date, time, issue, confirmationNumber }) {
-  if (!BUSINESS_PHONE) return;
+  const recipients = [...new Set([BUSINESS_PHONE, TECHNICIAN_PHONE].map(toE164).filter(Boolean))];
+  if (recipients.length === 0) return;
 
   const body =
     `New Booking – ${confirmationNumber}\n` +
@@ -57,7 +59,7 @@ async function sendBusinessAlert({ name, phone, address, date, time, issue, conf
     `Address: ${address}\n` +
     `Issue: ${issue}`;
 
-  return sendSms(BUSINESS_PHONE, body);
+  return Promise.all(recipients.map((to) => sendSms(to, body)));
 }
 
 module.exports = { sendBookingConfirmation, sendBusinessAlert, toE164 };
