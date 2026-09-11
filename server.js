@@ -25,6 +25,12 @@ app.get('/debug/config', (_req, res) => {
     GOOGLE_CLIENT_SECRET_set: !!process.env.GOOGLE_CLIENT_SECRET,
     GOOGLE_REFRESH_TOKEN_set: !!process.env.GOOGLE_REFRESH_TOKEN,
     BASE_URL: process.env.BASE_URL || '(not set)',
+    TWILIO_ACCOUNT_SID_set: !!process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN_set: !!process.env.TWILIO_AUTH_TOKEN,
+    TWILIO_PHONE_NUMBER_set: !!process.env.TWILIO_PHONE_NUMBER,
+    TWILIO_MESSAGING_SERVICE_SID_set: !!process.env.TWILIO_MESSAGING_SERVICE_SID,
+    BUSINESS_PHONE_set: !!process.env.BUSINESS_PHONE,
+    TECHNICIAN_PHONE_set: !!process.env.TECHNICIAN_PHONE,
   });
 });
 

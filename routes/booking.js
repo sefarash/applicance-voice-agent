@@ -30,10 +30,10 @@ router.post('/', async (req, res, next) => {
     const confirmationNumber = booking.uid;
 
     // SMS is best-effort — failure must not fail the booking response
-    Promise.all([
-      sendBookingConfirmation({ phone, name, address, date, time, issue, confirmationNumber }),
-      sendBusinessAlert({ name, phone, address, date, time, issue, confirmationNumber }),
-    ]).catch((err) => console.warn('SMS error (non-fatal):', err.message));
+    sendBookingConfirmation({ phone, name, address, date, time, issue, confirmationNumber })
+      .catch((err) => console.warn('Customer SMS error (non-fatal):', err.code || '', err.message));
+    sendBusinessAlert({ name, phone, address, date, time, issue, confirmationNumber })
+      .catch((err) => console.warn('Business SMS error (non-fatal):', err.code || '', err.message));
 
     res.json({
       success: true,
