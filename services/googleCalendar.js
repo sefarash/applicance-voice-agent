@@ -140,5 +140,6 @@ module.exports = {
   exchangeCode,
   seedTokenCache,
   AVAILABLE_SLOTS,
+  SLOT_DURATION_HOURS,
   TIMEZONE,
 };

@@ -1,4 +1,6 @@
 const twilio = require('twilio');
+const moment = require('moment-timezone');
+const { SLOT_DURATION_HOURS } = require('./googleCalendar');
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const FROM = process.env.TWILIO_PHONE_NUMBER;
@@ -31,10 +33,18 @@ async function sendSms(to, body) {
   return msg;
 }
 
+// "1:00 PM" -> "1:00 PM - 3:00 PM" (slot length matches the calendar event duration).
+function arrivalWindow(time) {
+  const start = moment(time, 'h:mm A', true);
+  if (!start.isValid()) return time;
+  return `${time} - ${start.add(SLOT_DURATION_HOURS, 'hours').format('h:mm A')}`;
+}
+
 async function sendBookingConfirmation({ phone, name, address, date, time, issue, confirmationNumber, bookingUrl }) {
   const body =
     `Appointment Confirmed!\n` +
-    `Date: ${date} at ${time} CT\n` +
+    `Date: ${date}\n` +
+    `Your technician will arrive between ${arrivalWindow(time)} CT\n` +
     `Issue: ${issue}\n` +
     `Address: ${address}\n` +
     `Confirmation #: ${confirmationNumber}\n` +
@@ -54,7 +64,7 @@ async function sendBusinessAlert({ name, phone, address, date, time, issue, conf
 
   const body =
     `New Booking – ${confirmationNumber}\n` +
-    `${date} at ${time} CT\n` +
+    `${date}, ${arrivalWindow(time)} CT\n` +
     `Customer: ${name} | ${phone}\n` +
     `Address: ${address}\n` +
     `Issue: ${issue}`;
@@ -62,4 +72,4 @@ async function sendBusinessAlert({ name, phone, address, date, time, issue, conf
   return Promise.all(recipients.map((to) => sendSms(to, body)));
 }
 
-module.exports = { sendBookingConfirmation, sendBusinessAlert, toE164 };
+module.exports = { sendBookingConfirmation, sendBusinessAlert, toE164, arrivalWindow };
